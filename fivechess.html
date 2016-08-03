@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>wuziqi</title>
+    <style>
+        canvas{
+            display: block;
+            margin: 50px auto;
+            box-shadow: -2px -2px 2px #efefef, 5px 5px 5px #b9b9b9;
+        }
+        .restart{
+            text-align: center;
+        }
+        #direction{
+            width:142px;
+            height:142px;
+            border:thin solid;
+            background:url("qizi.jpg") no-repeat;
+            /*黑子*/
+            background-position:-51px -34px;
+            /*白子*/
+            /*background-poisition:-191px -34px;*/
+        }
+        .container{
+            position:absolute;
+            left:20%;
+            top:30%;
+        }
+        #titleDirection{
+            text-align: center;
+        }
+        .restart>span{
+            display: inline-block;
+            padding: 10px 20px;
+            color: #fff;
+            background-color: #45c01a;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="chess" width="450px" height="450px"></canvas>
+    <div id='restart' class="restart">
+        <span>重新开始</span>
+    </div>
+    <div class="container">
+        <h3 id="titleDirection">执子颜色</h3>
+        <div id="direction">
+    </div>
+    </div>
+    <script>
+        var direction=document.getElementById("direction");
+        var chess = document.getElementById("chess");
+        var context = chess.getContext('2d');
+        context.strokeStyle = '#bfbfbf'; //边框颜色
+        //绘画棋盘
+        var drawChessBoard = function(){
+            for(var i = 0; i < 15; i++){
+                context.moveTo(15 + i * 30 , 15);
+                context.lineTo(15 + i * 30 , 435);
+                context.stroke();
+                context.moveTo(15 , 15 + i * 30);
+                context.lineTo(435 , 15 + i * 30);
+                context.stroke();
+            }
+        }
+        drawChessBoard();
+        //初始化棋盘
+        var chessBord = [];
+        for(var i = 0; i < 15; i++){
+            chessBord[i] = [];
+            for(var j = 0; j < 15; j++){
+                chessBord[i][j] = 0;
+            }
+        }
+        document.getElementById("restart").onclick = function(){
+            window.location.reload();
+        }
+        //初始化棋子颜色,1表示黑色，2表示白色
+        var color=1;
+        chess.onclick = function(e){
+            var x = e.offsetX;
+            var y = e.offsetY;
+            var i = Math.floor(x / 30);
+            var j = Math.floor(y / 30);
+            if(chessBord[i][j] == 0){
+                pushChess(i,j,color);
+                judgeWinner(i,j,color);
+                //console.log(color);
+                changeColor(color);
+            }
+        }
+        chess.onmousemove=function(e){
+
+        };
+        function pushChess(i,j,color){
+            context.beginPath();
+            context.arc(15 + i * 30, 15 + j * 30, 13, 0, 2 * Math.PI);//画圆
+            context.closePath();
+            //渐变
+            var gradient = context.createRadialGradient(15 + i * 30 + 2, 15 + j * 30 - 2, 13, 15 + i * 30 + 2, 15 + j * 30 - 2, 0);
+            if(color==1){
+                gradient.addColorStop(0,'#0a0a0a');//黑色棋子
+                gradient.addColorStop(1,'#636776');
+            }else if(color==2){
+                gradient.addColorStop(0,'#d1d1d1');//白色
+                gradient.addColorStop(1,'#f9f9f9');
+            }
+            context.fillStyle = gradient;
+            context.fill();
+            chessBord[i][j] = color;
+        }
+        function mark(arr){
+            arr.forEach(function(item){
+                var s=item.split(",");
+                context.beginPath();
+                context.arc(15 + s[0] * 30, 15 + s[1] * 30, 3, 0, 2 * Math.PI);//画圆
+                context.closePath();
+                context.fillStyle = '#F70000';
+                context.fill();
+            });
+
+        }
+        function changeColor(c){
+            if(c==1){
+               color+=1;
+               direction.style.backgroundPosition="-191px -34px"
+            }else if(c==2){
+                color-=1;
+                direction.style.backgroundPosition="-51px -34px"
+            }
+        }
+        //初始化赢得数组
+        var winArr=[];
+        function judgeWinner(i,j,color){
+            winArr.push(i+','+j);
+            var nums=1;
+            //x方向
+            for (m = j - 1; m >= 0; m--) {
+                if (chessBord[i][m] === color) {
+                    nums++;
+                    winArr.push(i+','+m);
+                }
+                else {
+                    break;
+                }
+            }
+            for (m = j + 1; m < 15; m++) {
+                if (chessBord[i][m] === color) {
+                    nums++;
+                    winArr.push(i+','+m);
+                }
+                else {
+                    break;
+                }
+            }
+            if (nums >= 5) {
+                playerWin(color);
+                console.log(winArr);
+                return;
+            }
+            else {
+                winArr.splice(1,winArr.length-1);
+                nums = 1;
+            }
+            //y方向
+            for (m = i - 1; m >= 0; m--) {
+                if (chessBord[m][j] === color) {
+                    nums++;
+                    winArr.push(m+','+j)
+                }
+                else {
+                    break;
+                }
+            }
+            for (m = i + 1; m < 15; m++) {
+                if (chessBord[m][j] === color) {
+                    nums++;
+                    winArr.push(m+','+j)
+                }
+                else {
+                    break;
+                }
+            }
+            if (nums >= 5) {
+                playerWin(color);
+                return;
+            }
+            else {
+                nums = 1;
+                winArr.splice(1,winArr.length-1);
+            }
+            //左斜方向
+            for (m = i - 1, n = j - 1; m >= 0 && n >= 0; m--, n--) {
+                if (chessBord[m][n] === color) {
+                    nums++;
+                    winArr.push(m+','+n);
+                }
+                else {
+                    break;
+                }
+            }
+            for (m = i + 1, n = j + 1; m < 15 && n < 15; m++, n++) {
+                if (chessBord[m][n] === color) {
+                    winArr.push(m+','+n);
+                    nums++;
+                }
+                else {
+                    break;
+                }
+            }
+            if (nums >= 5) {
+                playerWin(color);
+                return;
+            }
+            else {
+                nums = 1;
+                winArr.splice(1,winArr.length-1);
+            }
+            //右斜方向
+            for (m = i - 1, n = j + 1; m >= 0 && n < 15; m--, n++) {
+                if (chessBord[m][n] === color) {
+                    nums++;
+                    winArr.push(m+','+n);
+                }
+                else {
+                    break;
+                }
+            }
+            for (m = i + 1, n = j - 1; m < 15 && n >= 0; m++, n--) {
+                if (chessBord[m][n] === color) {
+                    nums++;
+                    winArr.push(m+','+n);
+                }
+                else {
+                    break;
+                }
+            }
+            if (nums >= 5) {
+                playerWin(color);
+                return;
+            }else{
+                winArr=[];
+            }
+        }
+        function playerWin(color){
+            //标注赢得位置
+            console.log(winArr);
+            mark(winArr);
+            if(color==1){
+                var reset=confirm("黑子赢了哟！！是否重新开局？");
+                if(reset){
+                    window.location.reload();
+                }else{
+                    chess.onclick=null;
+                }
+            }else if(color==2){
+                var reset=confirm("白子赢了哟！！是否重新开局？");
+                if(reset){
+                    window.location.reload();
+                }else{
+                    chess.onclick=null;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
